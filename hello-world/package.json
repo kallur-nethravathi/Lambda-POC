@@ -1,0 +1,10 @@
+{
+  "name": "lambda-local-test",
+  "version": "1.0.0",
+  "description": "Local AWS Lambda test",
+  "main": "index.js",
+  "scripts": {
+      "test": "node test.js"
+  },
+  "dependencies": {}
+}
