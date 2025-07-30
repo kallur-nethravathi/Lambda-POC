@@ -1,5 +1,26 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+
+# Deployment Configuration
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 128
+    Environment:
+      Variables:
+        STAGE: !Ref AWS::StackName
+
+# Parameters for deployment customization
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Environment name (dev, staging, prod)
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+
 Resources:
   HelloWorldFunction:
     Type: AWS::Serverless::Function
@@ -7,18 +28,51 @@ Resources:
       CodeUri: hello-world/
       Handler: index.handler
       Runtime: nodejs18.x
+      FunctionName: !Sub "${AWS::StackName}-hello-world"
+      Description: "Hello World Lambda Function"
+      Environment:
+        Variables:
+          ENVIRONMENT: !Ref Environment
+          FUNCTION_NAME: !Ref AWS::StackName
       Events:
         HelloWorld:
           Type: Api
           Properties:
             Path: /hello
             Method: get
-            Auth:
-              Authorizer: NONE
+            RestApiId: !Ref HelloWorldApi
         HelloWorldPost:
           Type: Api
           Properties:
             Path: /hello
             Method: post
-            Auth:
-              Authorizer: NONE
+            RestApiId: !Ref HelloWorldApi
+
+  # API Gateway
+  HelloWorldApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Environment
+      Description: "API Gateway for Hello World Lambda"
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+# Outputs for deployment
+Outputs:
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Hello World function"
+    Value: !Sub "https://${HelloWorldApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/hello/"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiUrl"
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-FunctionArn"
+  StackName:
+    Description: "Name of the CloudFormation stack"
+    Value: !Ref AWS::StackName
+    Export:
+      Name: !Sub "${AWS::StackName}-StackName"
