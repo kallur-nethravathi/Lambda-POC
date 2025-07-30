@@ -22,6 +22,22 @@ Parameters:
       - prod
 
 Resources:
+  # DynamoDB Table
+  HelloWorldTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${AWS::StackName}-hello-world-table"
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: name
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -29,11 +45,15 @@ Resources:
       Handler: index.handler
       Runtime: nodejs18.x
       FunctionName: !Sub "${AWS::StackName}-hello-world"
-      Description: "Hello World Lambda Function"
+      Description: "Hello World Lambda Function with DynamoDB"
       Environment:
         Variables:
           ENVIRONMENT: !Ref Environment
           FUNCTION_NAME: !Ref AWS::StackName
+          TABLE_NAME: !Ref HelloWorldTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref HelloWorldTable
       Events:
         HelloWorld:
           Type: Api
@@ -71,6 +91,11 @@ Outputs:
     Value: !GetAtt HelloWorldFunction.Arn
     Export:
       Name: !Sub "${AWS::StackName}-FunctionArn"
+  HelloWorldTable:
+    Description: "DynamoDB Table Name"
+    Value: !Ref HelloWorldTable
+    Export:
+      Name: !Sub "${AWS::StackName}-TableName"
   StackName:
     Description: "Name of the CloudFormation stack"
     Value: !Ref AWS::StackName
